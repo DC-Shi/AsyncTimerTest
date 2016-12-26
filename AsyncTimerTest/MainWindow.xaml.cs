@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -50,7 +51,24 @@ namespace AsyncTimerTest
         private void Cat_Tick(object sender, EventArgs e)
         {
             progressBar.Value = progressBar.Minimum + (progressBar.Value + ProgressIncrementValue) % (progressBar.Maximum - progressBar.Minimum);
+
+            /// Logic mistake:
+            /// If current process stopped responding, you changed the value but it has no effect.
+            /// If current process is responding, nothing changed.
+            /// But the test shows current process is responding, you can see the updated records,
+            /// but you cannot move the window. This is CPU or RAM related, the GC occurred so many times
+            /// on I5-3317U + 4G, but no frequent GC on I3-4130T + 16G
+            if (!curProcess.Responding)
+            {
+                cat.Interval *= 2;
+                listBoxLog.Items.Add("Interval changed to " + cat.Interval.ToString());
+            }
         }
+        /// https://msdn.microsoft.com/en-us/library/system.diagnostics.process.responding.aspx
+        /// 
+        Process curProcess = Process.GetCurrentProcess();
+
+
 
         ClassAsyncTimer cat = new ClassAsyncTimer();
 
